@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/VictorKabata/quotes-api/api/auth"
 	"github.com/badoux/checkmail"
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -16,7 +16,7 @@ type User struct {
 	ID        uint32    `gorm:"primary_key;auto_increment;unique" json:"id"`
 	Username  string    `gorm:"size:100;not null;unique" json:"username"`
 	Email     string    `gorm:"size:100;not null;unique" json:"email"`
-	Password  string    `gorm:"size:100;not null;unique" json:"password"`
+	Password  string    `gorm:"size:100;not null" json:"password"`
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
@@ -28,9 +28,8 @@ func (user *User) HashPassword(password string) (string, error) {
 }
 
 //Compares hashed password and unencryped password - Returns error
-func (user *User) VerifyHashedPassword(password, hashedPassword string) error {
-	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-	return err
+func VerifyHashedPassword(password, hashedPassword string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
 
 //Hashes password before creating new user
@@ -61,24 +60,22 @@ func (user *User) Validate(action string) error {
 		if user.Username == "" {
 			return errors.New("Username required")
 		}
-		if err := checkmail.ValidateFormat(user.Email); err != nil {
-			return errors.New("Invalid email format")
-		}
-
 		if user.Email == "" {
 			return errors.New("Email required")
+		}
+		if err := checkmail.ValidateFormat(user.Email); err != nil {
+			return errors.New("Invalid email format")
 		}
 		if user.Password == "" {
 			return errors.New("Password required")
 		}
 
 	case "login":
+		if user.Email == "" && user.Username == "" {
+			return errors.New("Email or Username required")
+		}
 		if err := checkmail.ValidateFormat(user.Email); err != nil {
 			return errors.New("Invalid email format")
-		}
-
-		if user.Email == "" {
-			return errors.New("Email required")
 		}
 		if user.Password == "" {
 			return errors.New("Password required")
@@ -90,34 +87,31 @@ func (user *User) Validate(action string) error {
 
 //Saves new user to database
 func (user *User) SaveUser(db *gorm.DB) (*User, error) {
-	err := db.Debug().Create(&user).Error
+	err := user.HashPasswordBeforeSave()
 	if err != nil {
 		return &User{}, err
 	}
 
+	err = db.Debug().Create(&user).Error
+	if err != nil {
+		return &User{}, err
+	}
 	return user, nil
 }
 
 //Returns all users saved in database
 func (user *User) GetAllUsers(db *gorm.DB) (*[]User, error) {
 	users := []User{}
-
-	err := db.Debug().Model(&User{}).Find(&user).Error
+	err := db.Debug().Model(&User{}).Find(&users).Error
 	if err != nil {
 		return &[]User{}, err
 	}
-
-	return &users, nil
+	return &users, err
 }
 
 //Returns a specific user querried from the database
 func (user *User) GetUser(db *gorm.DB, uid uint32) (*User, error) {
-	err := user.HashPasswordBeforeSave()
-	if err != nil {
-		return &User{}, err
-	}
-
-	err = db.Debug().Model(&User{}).Where("id=?", uid).Take(&user).Error
+	err := db.Debug().Model(&User{}).Where("id=?", uid).Take(&user).Error
 	if err != nil {
 		return &User{}, err
 	}
@@ -131,7 +125,12 @@ func (user *User) GetUser(db *gorm.DB, uid uint32) (*User, error) {
 
 //Updates specific users records in the database
 func (user *User) UpdateUser(db *gorm.DB, uid uint32) (*User, error) {
-	err := db.Debug().Model(&User{}).Where("id=?", uid).Take(&User{}).Updates(User{Username: user.Username, Email: user.Email, Password: user.Password}).Error
+	err := user.HashPasswordBeforeSave()
+	if err != nil {
+		return &User{}, err
+	}
+
+	err = db.Debug().Model(&User{}).Where("id=?", uid).Take(&User{}).Updates(User{Username: user.Username, Email: user.Email, Password: user.Password}).Error
 	if err != nil {
 		return &User{}, err
 	}
@@ -152,19 +151,4 @@ func (user *User) DeleteUser(db *gorm.DB, uid uint32) (int64, error) {
 	}
 
 	return deleteTx.RowsAffected, nil
-}
-
-//Generates user token based on user returned from email and password query
-func (user *User) SignInUser(db *gorm.DB, email, password string) (string, error) {
-	err := db.Model(&User{}).Where("email=? AND password=?", email, password).Take(&user).Error
-	if err != nil {
-		return "", err
-	}
-
-	generatedToken, err := auth.CreateToken(user.ID)
-	if err != nil {
-		return "", err
-	}
-
-	return generatedToken, nil
 }

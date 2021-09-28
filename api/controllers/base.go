@@ -26,15 +26,16 @@ func (server *Server) InitializeServer() {
 	password := os.Getenv("DB_PASSWORD")
 	dbname := os.Getenv("DB_NAME")
 
-	DBurl := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=diasble", host, port, user, password, dbname)
+	DBurl := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 	server.DB, err = gorm.Open(dbdriver, DBurl)
 	if err != nil {
-		fmt.Printf("Error connecting to database: %s\n", err)
+		fmt.Println("Error connecting to database")
+		log.Fatal("Database connection error: ", err)
 	} else {
 		fmt.Println("Successfully connected to database")
 	}
 
-	defer server.DB.Close()
+	//defer server.DB.Close()
 
 	server.DB.Debug().AutoMigrate(&models.User{})
 
