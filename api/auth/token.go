@@ -19,7 +19,7 @@ func CreateToken(uid uint32) (string, error) {
 
 }
 
-func TokenValid(r *http.Request) error {
+func IsTokenValid(r *http.Request) error {
 	tokenString := ExtractToken(r)
 	_, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
