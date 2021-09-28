@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/VictorKabata/quotes-api/api/auth"
 	"github.com/badoux/checkmail"
 	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
@@ -56,6 +57,21 @@ func (user *User) Prepare() {
 //Validates input
 func (user *User) Validate(action string) error {
 	switch strings.ToLower(action) {
+	case "create":
+		if user.Username == "" {
+			return errors.New("Username required")
+		}
+		if err := checkmail.ValidateFormat(user.Email); err != nil {
+			return errors.New("Invalid email format")
+		}
+
+		if user.Email == "" {
+			return errors.New("Email required")
+		}
+		if user.Password == "" {
+			return errors.New("Password required")
+		}
+
 	case "login":
 		if err := checkmail.ValidateFormat(user.Email); err != nil {
 			return errors.New("Invalid email format")
@@ -74,7 +90,7 @@ func (user *User) Validate(action string) error {
 
 //Saves new user to database
 func (user *User) SaveUser(db *gorm.DB) (*User, error) {
-	err := db.Debug().Model(&User{}).Create(&user).Error
+	err := db.Debug().Create(&user).Error
 	if err != nil {
 		return &User{}, err
 	}
@@ -96,9 +112,18 @@ func (user *User) GetAllUsers(db *gorm.DB) (*[]User, error) {
 
 //Returns a specific user querried from the database
 func (user *User) GetUser(db *gorm.DB, uid uint32) (*User, error) {
-	err := db.Debug().Model(&User{}).Where("id=?", uid).Take(&user).Error
+	err := user.HashPasswordBeforeSave()
 	if err != nil {
 		return &User{}, err
+	}
+
+	err = db.Debug().Model(&User{}).Where("id=?", uid).Take(&user).Error
+	if err != nil {
+		return &User{}, err
+	}
+
+	if gorm.IsRecordNotFoundError(err) {
+		return &User{}, errors.New("User not found")
 	}
 
 	return user, nil
@@ -136,10 +161,10 @@ func (user *User) SignInUser(db *gorm.DB, email, password string) (string, error
 		return "", err
 	}
 
-	// generatedToken,err:=auth.CreateToken(user.ID)
-	// if err!=nil{
-	// 	return "", err
-	// }
+	generatedToken, err := auth.CreateToken(user.ID)
+	if err != nil {
+		return "", err
+	}
 
-	return "", nil
+	return generatedToken, nil
 }
