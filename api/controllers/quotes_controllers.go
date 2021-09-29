@@ -106,6 +106,12 @@ func (server *Server) UpdateQuotes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = quote.ValidateInput("update")
+	if err != nil {
+		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
 	updatedQuote, err := quote.UpdateQuote(server.DB)
 	if err != nil {
 		responses.ERROR(w, http.StatusInternalServerError, err)
