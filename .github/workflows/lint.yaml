@@ -7,14 +7,17 @@ on:
 
 jobs:
   Lint:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
+
     steps:
-      ##- name: Checkout code and Setup Go enviroment
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - name: Setup Go
+        uses: actions/setup-go@v2
         with:
           stable: 'false'
           go-version: '1.17'
+
+      - name: Checkout code
+        uses: actions/checkout@v2
 
       - name: Lint
         run: |
