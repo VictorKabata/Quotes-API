@@ -79,9 +79,9 @@ func (quote *Quote) GetAllQuotes(db *gorm.DB) (*[]Quote, error) {
 }
 
 func (quote *Quote) GetQuote(db *gorm.DB, qid uint32) (*Quote, error) {
-	err := db.Debug().Model(&Quote{}).Where("id=?", qid).Take(&Quote{}).Error
+	err := db.Debug().Model(&Quote{}).Where("id = ?", qid).Take(&quote).Error
 	if err != nil {
-		return &Quote{}, nil
+		return &Quote{}, err
 	}
 
 	if gorm.IsRecordNotFoundError(err) {
@@ -89,7 +89,7 @@ func (quote *Quote) GetQuote(db *gorm.DB, qid uint32) (*Quote, error) {
 	}
 
 	if quote.ID != 0 {
-		err = db.Debug().Model(&User{}).Where("id=?", quote.UserID).Take(&quote.User).Error
+		err = db.Debug().Model(&User{}).Where("id = ?", quote.UserID).Take(&quote.User).Error
 		if err != nil {
 			return &Quote{}, err
 		}

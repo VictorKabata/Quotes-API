@@ -38,7 +38,7 @@ func TestGetAllUsers(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	err = seedMultipleUsers()
+	_, err = seedMultipleUsers()
 	if err != nil {
 		log.Fatal(err)
 	}
