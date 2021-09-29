@@ -7,18 +7,14 @@ on:
 
 jobs:
   Test:
-    strategy:
-      matrix:
-        go-version: [1.14.x,1.17.x]
-        platforms: [ububtu-latest]
-
-    runs-on: ${{matrix.platforms}}
+    runs-on: ubuntu-18.04
 
     steps:
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
-          go-version: ${{matrix.go-version}}
+          stable: 'false'
+          go-version: '1.17'
 
       - name: Checkout code
         uses: actions/checkout@v2
