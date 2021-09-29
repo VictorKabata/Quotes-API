@@ -9,7 +9,7 @@ jobs:
   Lint:
     runs-on: ubuntu-18.04
     steps:
-      - name: Checkout code and Setup Go enviroment
+      ##- name: Checkout code and Setup Go enviroment
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
