@@ -37,6 +37,14 @@ func (quote *Quote) ValidateInput(action string) error {
 		if quote.Sayer == "" {
 			return errors.New("Sayer required")
 		}
+
+	case "update":
+		if quote.Statement == "" {
+			return errors.New("Statement required")
+		}
+		if quote.Sayer == "" {
+			return errors.New("Sayer required")
+		}
 	}
 
 	return nil

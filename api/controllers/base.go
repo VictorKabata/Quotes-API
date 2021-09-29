@@ -37,7 +37,7 @@ func (server *Server) InitializeServer() {
 
 	//defer server.DB.Close()
 
-	server.DB.Debug().AutoMigrate(&models.User{})
+	server.DB.Debug().AutoMigrate(&models.User{}, &models.Quote{})
 
 	server.Router = mux.NewRouter()
 
